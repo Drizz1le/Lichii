@@ -487,6 +487,7 @@ void Scheduler::WorkerThread(std::stop_token stop_token) {
     const Common::DkbCpuTrace::Registration trace_thread{Common::DkbCpuTrace::Role::VulkanWorker};
     Common::SetCurrentThreadPriority(Common::ThreadPriority::Critical);
     Common::SetCurrentThreadToPerformanceCores();
+    Common::SetCurrentThreadToOwnCore(2);
 
     const auto TryPopQueue{[this](auto& work) -> bool {
         if (work_queue.empty()) {

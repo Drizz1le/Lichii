@@ -112,6 +112,10 @@ void SetCurrentThreadToEfficiencyCores();
 void SetCurrentThreadToBackgroundWork();
 void SetCurrentThreadToAllCores();
 
+/// EDEN_NX2_CORE_PLAN=1 (Windows): keep this thread on physical core `slot`, counting the
+/// fastest cores first, so the hot emulator threads never share an SMT core. No-op otherwise.
+void SetCurrentThreadToOwnCore(u32 slot);
+
 void RefreshThreadPolicies();
 void PollThreadPolicies();
 

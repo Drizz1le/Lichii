@@ -575,6 +575,63 @@ void SetCurrentThreadToAllCores() {
 #endif
 }
 
+void SetCurrentThreadToOwnCore(u32 slot) {
+#ifdef _WIN32
+    // One CPU set id per physical core: its first logical processor, fastest cores first.
+    static const std::vector<ULONG> cores = []() -> std::vector<ULONG> {
+        const char* value = std::getenv("EDEN_NX2_CORE_PLAN");
+        if (value == nullptr || value[0] != '1') {
+            return {};
+        }
+        ULONG length = 0;
+        GetSystemCpuSetInformation(nullptr, 0, &length, GetCurrentProcess(), 0);
+        std::vector<u8> buffer(length);
+        auto* const info = reinterpret_cast<PSYSTEM_CPU_SET_INFORMATION>(buffer.data());
+        if (length == 0 || !GetSystemCpuSetInformation(info, length, &length, GetCurrentProcess(), 0)) {
+            return {};
+        }
+        struct Core {
+            BYTE efficiency;
+            BYTE cache;
+            BYTE group;
+            BYTE index;
+            ULONG id;
+        };
+        std::vector<Core> found;
+        for (ULONG offset = 0; offset < length;) {
+            const auto& set = *reinterpret_cast<PSYSTEM_CPU_SET_INFORMATION>(buffer.data() + offset);
+            offset += set.Size;
+            if (set.Type != CpuSetInformation || set.CpuSet.Parked || set.CpuSet.Allocated) {
+                continue;
+            }
+            const bool seen = std::ranges::any_of(found, [&](const Core& core) {
+                return core.group == set.CpuSet.Group && core.index == set.CpuSet.CoreIndex;
+            });
+            if (!seen) {
+                found.push_back({set.CpuSet.EfficiencyClass, set.CpuSet.LastLevelCacheIndex,
+                                 static_cast<BYTE>(set.CpuSet.Group), set.CpuSet.CoreIndex,
+                                 set.CpuSet.Id});
+            }
+        }
+        // Performance cores first, then the first cache (the V-Cache die on dual-CCD X3D parts).
+        std::ranges::stable_sort(found, [](const Core& a, const Core& b) {
+            return a.efficiency != b.efficiency ? a.efficiency > b.efficiency : a.cache < b.cache;
+        });
+        std::vector<ULONG> ids;
+        for (const Core& core : found) {
+            ids.push_back(core.id);
+        }
+        LOG_INFO(Common, "EDEN_NX2_CORE_PLAN: {} physical cores", ids.size());
+        return ids;
+    }();
+    if (slot < cores.size()) {
+        SetThreadSelectedCpuSets(GetCurrentThread(), &cores[slot], 1);
+    }
+#else
+    (void)slot;
+#endif
+}
+
 void RefreshThreadPolicies() {
 #if defined(__ANDROID__)
     CpuTopologyState& state = State();

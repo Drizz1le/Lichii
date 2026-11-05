@@ -33,6 +33,9 @@ EDEN_NX2_BUFFER_SKIP=1
 EDEN_NX2_INLINE_INVALIDATE=1
 # Skip dynamic state updates on draws that changed none.
 EDEN_NX2_DYNAMIC_SKIP=1
+# Give the GPU threads and the 4 game CPU cores a physical core each (no SMT sharing).
+# Off by default: compare FPS in the same spot with it on and off.
+#EDEN_NX2_CORE_PLAN=1
 
 # --- Workarounds / Debug ---
 # Terrain/indirect drawing fix for Donkey Kong Bananza: enabled by default. Set to 0 only to leave to GPU.
