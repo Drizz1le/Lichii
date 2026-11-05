@@ -42,6 +42,7 @@ enum class Zone : u32 {
     Samplers,       ///< Inside ReadHandles: sampler lookups
     ComputeLookup,    ///< Inside Compute: finding the dispatch's pipeline
     ComputeConfigure, ///< Inside Compute: its bindings and buffer uploads
+    DeferredCall,     ///< Split back: functions the front deferred (Kind::Call entries)
     FillImageViews,
     TextureBuffers,
     UpdateBuffers,
@@ -69,7 +70,7 @@ inline constexpr std::array<const char*, static_cast<size_t>(Zone::Count)> zone_
     "tick",          "run",           "flush/inval",    "macro",          "draw",
     "clear",         "compute",       "flush work",     "pipeline lookup", "configure",
     "sync descriptors", "read handles", "storage binds", "handle programs", "samplers",
-    "compute lookup", "compute configure",
+    "compute lookup", "compute configure", "deferred call",
     "fill image views", "texture buffers", "update buffers",
     "descriptor acquire", "bind stage buffers", "push descriptors", "render targets",
     "configure draw", "dynamic state", "draw record", "texture upload", "fence",
