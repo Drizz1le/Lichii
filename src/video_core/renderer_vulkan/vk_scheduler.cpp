@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <memory>
 #include <algorithm>
+#include <tuple>
 #include <vector>
 #include <string_view>
 #include <string>
@@ -45,6 +46,8 @@ std::atomic<u64> g_profile_finish_ns{};
 std::atomic<u64> g_profile_window_start{};
 std::mutex g_profile_end_mutex;
 std::map<std::string, u64> g_profile_ends;
+/// Finishes by call site: count and nanoseconds waited.
+std::map<std::string, std::pair<u64, u64>> g_profile_finish_sites;
 
 void CountRenderPassEnd(const char* file, u32 line) {
     if (!VideoCommon::Nx2Profile::Enabled()) {
@@ -89,6 +92,21 @@ void ReportSubmitCounts() {
     for (size_t i = 0; i < ends.size() && i < 16; ++i) {
         LOG_INFO(Render_Vulkan, "Render pass ends {:.0f}/s at {}",
                  static_cast<double>(ends[i].first) / seconds, ends[i].second);
+    }
+    std::vector<std::tuple<u64, u64, std::string>> finishes;
+    {
+        std::scoped_lock lock{g_profile_end_mutex};
+        for (const auto& [site, stats] : g_profile_finish_sites) {
+            finishes.emplace_back(stats.second, stats.first, site);
+        }
+        g_profile_finish_sites.clear();
+    }
+    std::sort(finishes.rbegin(), finishes.rend());
+    for (size_t i = 0; i < finishes.size() && i < 8; ++i) {
+        const auto& [ns, count, site] = finishes[i];
+        LOG_INFO(Render_Vulkan, "Finishes {:.0f}/s waiting {:.1f} ms/s at {}",
+                 static_cast<double>(count) / seconds,
+                 static_cast<double>(ns) / 1e6 / seconds, site);
     }
 }
 }
@@ -251,9 +269,17 @@ void Scheduler::Finish(VkSemaphore signal_semaphore, VkSemaphore wait_semaphore,
     last_flush = std::chrono::steady_clock::now();
     flush_pending = false;
     if (profile) {
+        const u64 waited = VideoCommon::Nx2Profile::Now() - start;
         g_profile_finishes.fetch_add(1, std::memory_order_relaxed);
-        g_profile_finish_ns.fetch_add(VideoCommon::Nx2Profile::Now() - start,
-                                      std::memory_order_relaxed);
+        g_profile_finish_ns.fetch_add(waited, std::memory_order_relaxed);
+        std::string_view name{location.file_name()};
+        if (const auto slash = name.find_last_of("/\\"); slash != std::string_view::npos) {
+            name.remove_prefix(slash + 1);
+        }
+        std::scoped_lock lock{g_profile_end_mutex};
+        auto& site = g_profile_finish_sites[fmt::format("{}:{}", name, location.line())];
+        ++site.first;
+        site.second += waited;
     }
 }
 

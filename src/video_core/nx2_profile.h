@@ -37,6 +37,9 @@ enum class Zone : u32 {
     Configure,
     SyncDescriptors,
     ReadHandles,
+    StorageBinds,   ///< Inside ReadHandles: storage buffer bindings
+    HandlePrograms, ///< Inside ReadHandles: texture handles computed from storage buffers
+    Samplers,       ///< Inside ReadHandles: sampler lookups
     FillImageViews,
     TextureBuffers,
     UpdateBuffers,
@@ -63,7 +66,8 @@ inline constexpr std::array<const char*, static_cast<size_t>(Zone::Count)> zone_
     "other",         "idle",          "pending sleep",  "resume pending", "push",
     "tick",          "run",           "flush/inval",    "macro",          "draw",
     "clear",         "compute",       "flush work",     "pipeline lookup", "configure",
-    "sync descriptors", "read handles", "fill image views", "texture buffers", "update buffers",
+    "sync descriptors", "read handles", "storage binds", "handle programs", "samplers",
+    "fill image views", "texture buffers", "update buffers",
     "descriptor acquire", "bind stage buffers", "push descriptors", "render targets",
     "configure draw", "dynamic state", "draw record", "texture upload", "fence",
     "fence skipped", "method", "split drain", "split wait",
