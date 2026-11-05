@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <atomic>
 #include <cstddef>
 #include <memory>
 #include "common/bit_field.h"
@@ -24,6 +25,9 @@ class RasterizerInterface;
 }
 
 namespace Tegra::Engines {
+
+// Destination of the latest 2D blit, read by the Ocarina depth-clear workaround.
+extern std::atomic<u64> g_last_2d_blit_dst;
 
 namespace Blitter {
 class SoftwareBlitEngine;

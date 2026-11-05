@@ -37,6 +37,7 @@
 #include "video_core/render_trace.h"
 #include "video_core/indirect_reset.h"
 #include "video_core/engines/maxwell_3d.h"
+#include "video_core/engines/fermi_2d.h"
 #include "video_core/engines/kepler_compute.h"
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/host1x/gpu_device_memory_manager.h"
@@ -344,6 +345,11 @@ bool RasterizerVulkan::TryNx2IndirectReset(bool is_indexed, u32 instance_count) 
 
 template <typename Func>
 void RasterizerVulkan::PrepareDraw(bool is_indexed, Func&& draw_func, bool is_indirect) {
+    if (maxwell3d->regs.zeta_enable &&
+        maxwell3d->regs.zeta.Address() ==
+            Tegra::Engines::g_last_2d_blit_dst.load(std::memory_order_relaxed)) {
+        Tegra::Engines::g_last_2d_blit_dst.store(0, std::memory_order_relaxed);
+    }
 
     if (Common::DkbFrameTrace::Enabled()) {
         ++trace_draws;
@@ -1091,8 +1097,18 @@ void RasterizerVulkan::Clear(u32 layer_count) {
     auto& regs = maxwell3d->regs;
     const bool use_color = regs.clear_surface.R || regs.clear_surface.G || regs.clear_surface.B ||
                            regs.clear_surface.A;
-    const bool use_depth = regs.clear_surface.Z;
+    bool use_depth = regs.clear_surface.Z;
     const bool use_stencil = regs.clear_surface.S;
+    // Ocarina blits its half-res scene depth into a target, then Z-clears that target again
+    // before sampling it, and on console the copy survives. Drop those clears until something
+    // draws to it. shortcut: matches the observed sequence only; replace once the register
+    // state that redirects these clears on hardware is found.
+    if (use_depth && !use_color && program_id == 0x0400486024DEC000ULL && regs.zeta_enable &&
+        regs.zeta.Address() ==
+            Tegra::Engines::g_last_2d_blit_dst.load(std::memory_order_relaxed) &&
+        !std::getenv("EDEN_NX2_KEEP_BLIT_DEPTH_CLEARS")) {
+        use_depth = false;
+    }
     if (!use_color && !use_depth && !use_stencil) {
         return;
     }

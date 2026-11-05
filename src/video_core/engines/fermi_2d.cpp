@@ -23,6 +23,8 @@ namespace Tegra::Engines {
 
 using namespace Texture;
 
+std::atomic<u64> g_last_2d_blit_dst{};
+
 Fermi2D::Fermi2D(MemoryManager& memory_manager_) : memory_manager{memory_manager_} {
     sw_blitter = std::make_unique<Blitter::SoftwareBlitEngine>(memory_manager);
     // Nvidia's OpenGL driver seems to assume these values
@@ -154,6 +156,7 @@ void Fermi2D::Blit() {
         config.src_x0 = 0;
     }
 
+    g_last_2d_blit_dst.store(regs.dst.Address(), std::memory_order_relaxed);
     memory_manager.FlushCaching();
     if (!rasterizer->AccelerateSurfaceCopy(src, regs.dst, config)) {
         sw_blitter->Blit(src, regs.dst, config);
