@@ -22,6 +22,18 @@ EDEN_NX2_FENCE_BATCH=1
 # Enable only if frame pacing stability is preferred over responsive controls.
 #EDEN_NX2_FRAMES_AHEAD=2
 
+# --- oot-perf build: experimental draw fast paths, on by default here ---
+# Put a # in front of a line (or set it to 0 in your user copy) to turn it off if something
+# renders wrong. Add EDEN_NX2_FAST_DRAW_VERIFY=1 to check them: the log counts mismatches.
+# Reuse an unchanged draw's bindings; 2 also takes draws that only change buffers or offsets.
+EDEN_NX2_FAST_DRAW=2
+# Skip vertex buffer lookups and upload scans for ranges nothing wrote since the last draw.
+EDEN_NX2_BUFFER_SKIP=1
+# Tell the texture, query and shader caches only about pages they hold something on.
+EDEN_NX2_INLINE_INVALIDATE=1
+# Skip dynamic state updates on draws that changed none.
+EDEN_NX2_DYNAMIC_SKIP=1
+
 # --- Workarounds / Debug ---
 # Terrain/indirect drawing fix for Donkey Kong Bananza: enabled by default. Set to 0 only to leave to GPU.
 #EDEN_NX2_RESETFIX=0
