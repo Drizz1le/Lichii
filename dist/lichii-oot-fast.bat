@@ -17,8 +17,11 @@ rem Skip rebuilding the pipeline key when the registers it reads are unchanged.
 set EDEN_NX2_PIPELINE_CLEAN=1
 rem Compare small uniform buffers in guest memory instead of copying them first.
 set EDEN_NX2_UBO_INPLACE=1
-rem Log where the GPU threads spend their time every 10 s (eden_log.txt).
+rem Diagnostics for the next round (cost a little speed; put "rem " in front once the log is sent):
+rem where the GPU threads spend their time every 10 s, and how long the GPU itself takes per frame
+rem with its slowest shaders (eden_log.txt).
 set EDEN_NX2_GPU_PROFILE=1
+set EDEN_DKB_FRAME_TRACE=1
 
 rem Measured slower on a 9800X3D (25 to 21 fps in Kokiri Forest); left off.
 rem set EDEN_NX2_CORE_PLAN=1
