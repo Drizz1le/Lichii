@@ -33,13 +33,19 @@ EDEN_NX2_BUFFER_SKIP=1
 EDEN_NX2_INLINE_INVALIDATE=1
 # Skip dynamic state updates on draws that changed none.
 EDEN_NX2_DYNAMIC_SKIP=1
+# Cache the page pointers of per-draw texture handle reads.
+EDEN_NX2_HANDLE_PTR_CACHE=1
+# Skip rebuilding the pipeline key when the registers it reads are unchanged.
+EDEN_NX2_PIPELINE_CLEAN=1
+# Compare small uniform buffers in guest memory instead of copying them first.
+EDEN_NX2_UBO_INPLACE=1
 # Give the GPU threads and the 4 game CPU cores a physical core each (no SMT sharing).
 # Off by default: measured slower on a 9800X3D (25 to 21 fps in Kokiri Forest).
 #EDEN_NX2_CORE_PLAN=1
-# Draws per GPU submission for Switch 2 games (default 128). Fewer submissions mean less
-# re-binding on the GPU thread and fewer render pass splits; more mean the GPU starts earlier
-# when the game waits on it. Try 256 and 512 against the default.
-#EDEN_NX2_FLUSH_DRAWS=256
+# Draws per GPU submission for Switch 2 games (default 4096 on desktop). Fewer submissions mean
+# less re-binding on the GPU thread and fewer render pass splits; more mean the GPU starts
+# earlier when the game waits on it. Try 1024 if the GPU waits a lot.
+#EDEN_NX2_FLUSH_DRAWS=1024
 # Ocarina: skip the Z clears of its blitted half-res depth (dark blotches on the floor in
 # builds without the macro query flush). Only turn on if the blotches come back.
 #EDEN_NX2_SKIP_BLIT_DEPTH_CLEARS=1
