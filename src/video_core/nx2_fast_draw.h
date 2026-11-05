@@ -61,7 +61,7 @@ inline int ModeFromEnvironment() {
 
 inline bool g_enabled = ModeFromEnvironment() != 0;
 inline bool g_delta_enabled = ModeFromEnvironment() == 2;
-inline const bool g_verify = [] {
+inline bool g_verify = [] {
     const char* const value = std::getenv("EDEN_NX2_FAST_DRAW_VERIFY");
     return value != nullptr && value[0] == '1';
 }();
@@ -69,7 +69,7 @@ inline const bool g_verify = [] {
 /// EDEN_NX2_BUFFER_SKIP=1: the buffer cache keeps vertex buffer lookups while their registers and
 /// the page table stay the same, skips the upload scan of vertex buffers no CPU write reached, and
 /// touches each buffer's LRU entry once a frame.
-inline const bool g_buffer_skip = [] {
+inline bool g_buffer_skip = [] {
     const char* const value = std::getenv("EDEN_NX2_BUFFER_SKIP");
     return value != nullptr && value[0] == '1';
 }();
@@ -77,17 +77,32 @@ inline const bool g_buffer_skip = [] {
 /// EDEN_NX2_INLINE_INVALIDATE=1: writes the caches must hear about (inline constant buffer data,
 /// inline-to-memory) reach the texture, query and shader caches only on pages those held something
 /// on; the buffer cache hears about all of them.
-inline const bool g_inline_invalidate = [] {
+inline bool g_inline_invalidate = [] {
     const char* const value = std::getenv("EDEN_NX2_INLINE_INVALIDATE");
     return value != nullptr && value[0] == '1';
 }();
 
 /// EDEN_NX2_DYNAMIC_SKIP=1: a draw with no dynamic state flag set skips the dynamic state updates,
 /// and the vertex input update uses the draw's pipeline instead of looking it up again.
-inline const bool g_dynamic_skip = [] {
+inline bool g_dynamic_skip = [] {
     const char* const value = std::getenv("EDEN_NX2_DYNAMIC_SKIP");
     return value != nullptr && value[0] == '1';
 }();
+
+/// The flags above are set before main() runs, before the frontend loads nx2_switches.txt into
+/// the environment: the frontend calls this once it has.
+inline void LoadFromEnvironment() {
+    const auto on = [](const char* name) {
+        const char* const value = std::getenv(name);
+        return value != nullptr && value[0] == '1';
+    };
+    g_enabled = ModeFromEnvironment() != 0;
+    g_delta_enabled = ModeFromEnvironment() == 2;
+    g_verify = on("EDEN_NX2_FAST_DRAW_VERIFY");
+    g_buffer_skip = on("EDEN_NX2_BUFFER_SKIP");
+    g_inline_invalidate = on("EDEN_NX2_INLINE_INVALIDATE");
+    g_dynamic_skip = on("EDEN_NX2_DYNAMIC_SKIP");
+}
 
 inline std::atomic<u64> g_serial{1};
 /// The last break's reason and, for Register and Method, its 3D method (diagnostics).

@@ -73,8 +73,14 @@ inline constexpr std::array<const char*, static_cast<size_t>(Zone::Count)> zone_
 // Read once at startup: Enabled() runs several times per method write (no guard to check).
 // Off while EDEN_NX2_SAMPLE_PROFILE samples (common/nx2_sample_profile.h): the zone timers would
 // show up in the samples.
-inline const bool g_enabled = std::getenv("EDEN_NX2_GPU_PROFILE") != nullptr &&
-                              std::getenv("EDEN_NX2_SAMPLE_PROFILE") == nullptr;
+inline bool g_enabled = std::getenv("EDEN_NX2_GPU_PROFILE") != nullptr &&
+                        std::getenv("EDEN_NX2_SAMPLE_PROFILE") == nullptr;
+
+/// Reads the switches again once the frontend has loaded nx2_switches.txt (see Nx2FastDraw).
+inline void LoadFromEnvironment() {
+    g_enabled = std::getenv("EDEN_NX2_GPU_PROFILE") != nullptr &&
+                std::getenv("EDEN_NX2_SAMPLE_PROFILE") == nullptr;
+}
 
 inline bool Enabled() {
     return g_enabled;

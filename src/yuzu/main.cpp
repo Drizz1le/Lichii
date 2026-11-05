@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "video_core/nx2_fast_draw.h"
+#include "video_core/nx2_profile.h"
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -163,6 +165,8 @@ static void LoadNx2Switches(const char* argv0) {
 
 int main(int argc, char* argv[]) {
     LoadNx2Switches(argv[0]);
+    VideoCommon::Nx2FastDraw::LoadFromEnvironment();
+    VideoCommon::Nx2Profile::LoadFromEnvironment();
 #if YUZU_ROOM
     bool launch_room = false;
     for (int i = 1; i < argc; i++) {
