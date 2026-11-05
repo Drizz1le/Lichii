@@ -164,7 +164,8 @@ public:
             return;
         }
         Defer(func);
-        Drain(site);
+        // The front doesn't use the scheduler after this: no need to wait for the idle hook.
+        Drain(site, false);
     }
 
     /// EDEN_NX2_SPLIT_CHECK=1 (debug): reports, with its stack, a thread other than the back
@@ -174,8 +175,9 @@ public:
 
     /// Makes what was sent visible to the back.
     void Publish();
-    /// Waits until the back executed everything sent so far.
-    void Drain(DrainSite site = DrainSite::Other);
+    /// Waits until the back executed everything sent so far, and with `quiet` also until it is
+    /// done with the Vulkan scheduler (its idle hook ran), for callers that use it next.
+    void Drain(DrainSite site = DrainSite::Other, bool quiet = true);
 
     /// Compute or copy work was just sent: what can write GPU-written command lists.
     void NoteWriter() {

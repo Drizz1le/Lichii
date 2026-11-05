@@ -192,12 +192,12 @@ void GpuSplit::Publish() {
     }
 }
 
-void GpuSplit::Drain(DrainSite site) {
+void GpuSplit::Drain(DrainSite site, bool quiet) {
     bool waited = WaitFor(write_position, site);
     // Everything consumed is not enough: the back submits deferred work (Scheduler::DeferFlush)
     // from its idle hook afterwards, and the caller may use the scheduler once this returns
     // (upstream Eglantine #639: crashes in Scheduler::SubmitExecution).
-    if (!on_back_thread && !BackQuiet()) {
+    if (quiet && !on_back_thread && !BackQuiet()) {
         RequestIdleHook();
         for (u32 spins = 0; !BackQuiet(); ++spins) {
             if (spins < 16384) {
