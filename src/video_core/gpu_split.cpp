@@ -193,7 +193,22 @@ void GpuSplit::Publish() {
 }
 
 void GpuSplit::Drain(DrainSite site) {
-    if (WaitFor(write_position, site)) {
+    bool waited = WaitFor(write_position, site);
+    // Everything consumed is not enough: the back submits deferred work (Scheduler::DeferFlush)
+    // from its idle hook afterwards, and the caller may use the scheduler once this returns
+    // (upstream Eglantine #639: crashes in Scheduler::SubmitExecution).
+    if (!on_back_thread && !BackQuiet()) {
+        RequestIdleHook();
+        for (u32 spins = 0; !BackQuiet(); ++spins) {
+            if (spins < 16384) {
+                Pause();
+            } else {
+                std::this_thread::yield();
+            }
+        }
+        waited = true;
+    }
+    if (waited) {
         publish_every = 8;
     }
 }
@@ -387,6 +402,8 @@ void GpuSplit::BackLoop(std::stop_token stop_token) {
                 available = published.load(std::memory_order_acquire);
             }
             if (available == read_position) {
+                // Done with the scheduler until more work comes: Drain() waits for this too.
+                back_quiet.store(true, std::memory_order_seq_cst);
                 // Publish bumps `wake` when it sees back_waiting: read it before the last look
                 // at `published`, so a publish in between ends the wait at once.
                 back_waiting.store(true, std::memory_order_seq_cst);
@@ -401,6 +418,8 @@ void GpuSplit::BackLoop(std::stop_token stop_token) {
                 continue;
             }
         }
+        // Before any entry runs, so a front that sees these entries consumed also sees this.
+        back_quiet.store(false, std::memory_order_seq_cst);
         u64 last_store = read_position;
         while (read_position != available) {
             const size_t index = read_position & RingMask;
