@@ -57,8 +57,8 @@ endif()
 add_compile_definitions(BUILD_ID="${BUILD_ID}")
 
 # Set compilation flags
-# clang-cl sees windows.h too, and its min/max macros break std::min/std::max.
 if (MSVC)
+    # Avoid windows.h min/max macros with both cl.exe and clang-cl.
     add_compile_definitions(NOMINMAX)
 endif()
 
@@ -67,9 +67,6 @@ if (MSVC AND NOT CXX_CLANG)
 
     # Silence "deprecation" warnings
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE _SCL_SECURE_NO_WARNINGS)
-
-    # Avoid windows.h junk
-    add_compile_definitions(NOMINMAX)
 
     # Avoid windows.h from including some usually unused libs like winsocks.h, since this might cause some redefinition errors.
     add_compile_definitions(WIN32_LEAN_AND_MEAN)
