@@ -30,6 +30,8 @@ rem set EDEN_NX2_FLUSH_DRAWS=1024
 rem Replace the game's upscaling network (hundreds of emulated matrix multiplies per frame) with a
 rem plain copy: frees GPU time if the GPU is the limit, at some cost in image quality.
 rem set EDEN_NX2_TENSOR_STANDIN=1
+rem If the game hangs or the GPU resets: stop running a frame ahead (Ocarina does by default).
+rem set EDEN_NX2_FRAMES_AHEAD=0
 
 rem Function-level profile instead of the zone timers above: samples the GPU threads and the
 rem game CPU cores 1000 times a second for 20 s, starting 90 s after launch (get in game by then),
