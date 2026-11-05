@@ -383,7 +383,7 @@ void ArmDynarmic64::MakeJit(Common::PageTable* page_table, std::size_t address_s
                 Common::g_wall_clock.cntpct_rdtsc_factor.load(std::memory_order_relaxed);
             if (ShouldPauseCntpctSpins()) {
                 config.inline_cntpct_last_ptr = &m_cb->m_last_cntpct;
-                config.inline_cntpct_spin_ticks = m_cb->m_spin_ticks;
+                config.inline_cntpct_spin_ticks = static_cast<std::uint32_t>(m_cb->m_spin_ticks);
             }
         }
     }
