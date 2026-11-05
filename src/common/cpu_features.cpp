@@ -240,6 +240,11 @@ const CPUCaps g_cpu_caps = [] {
 
 #else
 
+// Only the x86-64 build detects cores; callers treat an empty result as unknown.
+std::optional<int> GetProcessorCount() {
+    return std::nullopt;
+}
+
 #endif
 
 #if defined(ARCHITECTURE_x86_64)
