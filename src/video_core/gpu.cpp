@@ -127,6 +127,7 @@ struct GPU::Impl {
         std::unique_lock lck{sync_request_mutex};
         const u64 fence = ++last_sync_fence;
         sync_requests.emplace_back(std::forward<Func>(action));
+        has_sync_requests.store(true, std::memory_order_release);
         return fence;
     }
 
@@ -148,7 +149,12 @@ struct GPU::Impl {
 
     /// Tick pending requests within the GPU.
     void TickWork() {
+        // Runs after every draw: skip the lock while nothing is queued.
+        if (!has_sync_requests.load(std::memory_order_acquire)) {
+            return;
+        }
         std::unique_lock lck{sync_request_mutex};
+        has_sync_requests.store(false, std::memory_order_relaxed);
         while (!sync_requests.empty()) {
             auto request = std::move(sync_requests.front());
             sync_requests.pop_front();
@@ -368,6 +374,7 @@ struct GPU::Impl {
 
     VideoCommon::PendingMaps pending_maps;
     std::mutex sync_request_mutex;
+    std::atomic<bool> has_sync_requests{};
     std::condition_variable sync_request_cv;
 
     const bool is_async;
