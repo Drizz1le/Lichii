@@ -19,4 +19,11 @@ rem set EDEN_NX2_CORE_PLAN=1
 rem Draws per GPU submission (default 128): try 256 and 512.
 rem set EDEN_NX2_FLUSH_DRAWS=256
 
+rem Function-level profile instead of the zone timers above: samples the GPU threads and the
+rem game CPU cores 1000 times a second for 20 s, starting 90 s after launch (get in game by then),
+rem into nx2_samples_<pid>.bin in %APPDATA%\eden\log. Send that file with eden_log.txt.
+rem set EDEN_NX2_SAMPLE_PROFILE=1000
+rem set EDEN_NX2_SAMPLE_DELAY=90
+rem set EDEN_NX2_SAMPLE_THREADS=GPU,GPUBack,VulkanWorker,CPUCore_*
+
 start "" "%~dp0lichii.exe" %*
