@@ -441,6 +441,9 @@ bool Maxwell3D::IsFastDrawParameter(u32 method) {
     case MAXWELL3D_REG_INDEX(const_buffer.offset):
     case MAXWELL3D_REG_INDEX(global_base_vertex_index):
     case MAXWELL3D_REG_INDEX(global_base_instance_index):
+    // Only HLE macros write it and nothing renders from it; Ocarina sets it before most draws,
+    // which broke reuse ~14,500 times a second.
+    case MAXWELL3D_REG_INDEX(vertex_id_base):
         return true;
     default:
         return DrawManager::IsInstanceLoopMethod(method) || IsFastDrawDeltaMethod(method);
@@ -479,7 +482,10 @@ bool Maxwell3D::IsFastDrawDeltaMethod(u32 method) {
 }
 
 void Maxwell3D::ProcessMethodCall(u32 method, u32 argument, u32 nonshadow_argument, bool is_last_call) {
+    // A counter reset (Ocarina's per-object occlusion queries) changes no binding: the reused
+    // draw path updates the query counters itself.
     if (!DrawManager::IsInstanceLoopMethod(method) &&
+        method != MAXWELL3D_REG_INDEX(clear_report_value) &&
         !(VideoCommon::Nx2FastDraw::g_delta_enabled && IsFastDrawDeltaMethod(method))) {
         VideoCommon::Nx2FastDraw::Break(VideoCommon::Nx2FastDraw::Reason::Method, method);
     }
