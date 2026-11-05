@@ -1406,14 +1406,18 @@ void RasterizerVulkan::Clear(u32 layer_count) {
                            regs.clear_surface.A;
     bool use_depth = regs.clear_surface.Z;
     const bool use_stencil = regs.clear_surface.S;
-    // Ocarina blits its half-res scene depth into a target, then Z-clears that target again
-    // before sampling it, and on console the copy survives. Drop those clears until something
-    // draws to it. shortcut: matches the observed sequence only; replace once the register
-    // state that redirects these clears on hardware is found.
-    if (use_depth && !use_color && program_id == 0x0400486024DEC000ULL && regs.zeta_enable &&
+    // EDEN_NX2_SKIP_BLIT_DEPTH_CLEARS=1: drop Ocarina's Z clears of the target its half-res
+    // scene depth was just blitted to, until something draws to it. Off by default: those clears
+    // came from a predicate macro reading a stale record, fixed by flushing query writes before
+    // native MME DMA reads.
+    static const bool skip_blit_depth_clears = [] {
+        const char* value = std::getenv("EDEN_NX2_SKIP_BLIT_DEPTH_CLEARS");
+        return value != nullptr && value[0] == '1';
+    }();
+    if (skip_blit_depth_clears && use_depth && !use_color &&
+        program_id == 0x0400486024DEC000ULL && regs.zeta_enable &&
         regs.zeta.Address() ==
-            Tegra::Engines::g_last_2d_blit_dst.load(std::memory_order_relaxed) &&
-        !std::getenv("EDEN_NX2_KEEP_BLIT_DEPTH_CLEARS")) {
+            Tegra::Engines::g_last_2d_blit_dst.load(std::memory_order_relaxed)) {
         use_depth = false;
     }
     if (!use_color && !use_depth && !use_stencil) {
@@ -1635,7 +1639,10 @@ void RasterizerVulkan::DispatchCompute() {
         frame_dump.DrainIfFull();
     }
 
-    ComputePipeline* const pipeline{pipeline_cache.CurrentComputePipeline()};
+    ComputePipeline* const pipeline{[&] {
+        VideoCommon::Nx2Profile::Scope lookup_scope{VideoCommon::Nx2Profile::Zone::ComputeLookup};
+        return pipeline_cache.CurrentComputePipeline();
+    }()};
     if (!pipeline) {
         if (kepler_compute->IsNativeMode()) throw Shader::RuntimeError("Native compute pipeline unavailable");
         return;
@@ -1649,7 +1656,9 @@ void RasterizerVulkan::DispatchCompute() {
             texture_cache_runtime.RetireByteAddressedShadow(*byte_addressed_shadow);
         }
     };
-    if (!pipeline->Configure(*kepler_compute, *gpu_memory, scheduler, buffer_cache,
+    if (VideoCommon::Nx2Profile::Scope configure_scope{
+            VideoCommon::Nx2Profile::Zone::ComputeConfigure};
+        !pipeline->Configure(*kepler_compute, *gpu_memory, scheduler, buffer_cache,
                              texture_cache, texture_cache_runtime, byte_addressed_shadow)) {
         if (kepler_compute->IsNativeMode()) throw Shader::RuntimeError("Native compute resources unavailable");
         return;

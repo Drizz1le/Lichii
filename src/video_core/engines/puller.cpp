@@ -256,6 +256,12 @@ void Puller::ProcessSemaphoreTriggerMethod(DmaPusher& dma_pusher) {
             return;
         }
         VideoCommon::Nx2Profile::Add(VideoCommon::Nx2Profile::Counter::AcquireChecks, 1);
+        // Semaphores only count up: a greater-or-equal value already in memory stays met whatever
+        // the back still has queued, so skip draining it (about 100 us each, thousands a second).
+        if (op == GpuSemaphoreOperation::AcquireGequal &&
+            acquire.Matches(dma_pusher.memory_manager.Read<u32>(acquire.address))) {
+            return;
+        }
         DrainBack();
         if (acquire.Matches(ReadSemaphoreWord(dma_pusher, acquire.address))) {
             return;
@@ -345,6 +351,13 @@ void Puller::ProcessSemaphoreExecute(DmaPusher& dma_pusher, u32 argument) {
         return;
     }
     // Acquires: check once after flushing pending fences; never block the GPU thread on them.
+    // A greater-or-equal one already met in memory stays met (semaphores count up): no drain.
+    if (operation == 2 || operation == 3) {
+        const u32 word = dma_pusher.memory_manager.Read<u32>(address);
+        if (operation == 2 ? word >= payload : static_cast<s32>(word - payload) >= 0) {
+            return;
+        }
+    }
     DrainBack();
     ReleaseFences(dma_pusher);
     const u32 word = dma_pusher.memory_manager.Read<u32>(address);
