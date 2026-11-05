@@ -46,6 +46,9 @@ EDEN_NX2_UBO_INPLACE=1
 # less re-binding on the GPU thread and fewer render pass splits; more mean the GPU starts
 # earlier when the game waits on it. Try 1024 if the GPU waits a lot.
 #EDEN_NX2_FLUSH_DRAWS=1024
+# Replace the game's upscaling network (hundreds of emulated matrix multiplies per frame) with a
+# plain copy: frees GPU time if the GPU is the limit, at some cost in image quality.
+#EDEN_NX2_TENSOR_STANDIN=1
 # Ocarina: skip the Z clears of its blitted half-res depth (dark blotches on the floor in
 # builds without the macro query flush). Only turn on if the blotches come back.
 #EDEN_NX2_SKIP_BLIT_DEPTH_CLEARS=1

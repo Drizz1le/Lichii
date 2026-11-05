@@ -2386,7 +2386,13 @@ bool RasterizerVulkan::UsesNvidiaDlss() const {
 bool RasterizerVulkan::EmulatesNativeTensorPrograms() const {
     // Mesa's Intel driver takes minutes to compile an emulated network (Ocarina of Time's has 768
     // matrix multiplies) and then runs it at about 8 FPS. The upscale stand-in draws instead.
-    return device.GetDriverID() != VK_DRIVER_ID_INTEL_OPEN_SOURCE_MESA;
+    // EDEN_NX2_TENSOR_STANDIN=1 draws the stand-in on every GPU, to trade the network's image for
+    // its GPU time.
+    static const bool forced_standin = [] {
+        const char* value = std::getenv("EDEN_NX2_TENSOR_STANDIN");
+        return value != nullptr && value[0] == '1';
+    }();
+    return !forced_standin && device.GetDriverID() != VK_DRIVER_ID_INTEL_OPEN_SOURCE_MESA;
 }
 
 bool RasterizerVulkan::SupportsGameDlssNetwork() const {
