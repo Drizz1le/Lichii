@@ -209,7 +209,6 @@ private:
         boost::container::small_vector<std::pair<std::conditional_t<is_gpu_address, GPUVAddr, DAddr>, std::size_t>, 32>& result) const;
 
     std::atomic<GPUVAddr> native_syncpoint_shim{};
-    std::atomic<u64> map_serial{};
     Core::System& system;
     MaxwellDeviceMemoryManager& memory;
 
