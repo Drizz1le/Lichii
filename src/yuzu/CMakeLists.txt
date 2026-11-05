@@ -252,6 +252,13 @@ add_custom_command(TARGET yuzu POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${PROJECT_SOURCE_DIR}/dist/nx2_switches.txt" "$<TARGET_FILE_DIR:yuzu>/nx2_switches.txt"
     VERBATIM)
+if (WIN32)
+    # A launcher that sets the OoT speed switches before the process starts.
+    add_custom_command(TARGET yuzu POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${PROJECT_SOURCE_DIR}/dist/lichii-oot-fast.bat" "$<TARGET_FILE_DIR:yuzu>/lichii-oot-fast.bat"
+        VERBATIM)
+endif()
 
 if (YUZU_CRASH_DUMPS)
     target_sources(yuzu PRIVATE

@@ -34,7 +34,7 @@ EDEN_NX2_INLINE_INVALIDATE=1
 # Skip dynamic state updates on draws that changed none.
 EDEN_NX2_DYNAMIC_SKIP=1
 # Give the GPU threads and the 4 game CPU cores a physical core each (no SMT sharing).
-# Off by default: compare FPS in the same spot with it on and off.
+# Off by default: measured slower on a 9800X3D (25 to 21 fps in Kokiri Forest).
 #EDEN_NX2_CORE_PLAN=1
 # Draws per GPU submission for Switch 2 games (default 128). Fewer submissions mean less
 # re-binding on the GPU thread and fewer render pass splits; more mean the GPU starts earlier
