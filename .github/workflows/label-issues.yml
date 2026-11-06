@@ -1,13 +1,14 @@
 name: Label issues from form
+# Manual runs only on this fork; the job needs an opened issue, so it skips itself otherwise.
 on:
-  issues:
-    types: [opened]
+  workflow_dispatch:
 
 permissions:
   issues: write
 
 jobs:
   label:
+    if: github.event_name == 'issues'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v7
